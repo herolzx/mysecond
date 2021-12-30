@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.situ.dao.EmployeeDAO">
+	<!-- 配置了一个sql片段 -->
+	<sql id="EmployeeColumns">
+		id,employee_id,name,department_id,sex,birthday,salary,phone
+	</sql>
+
+	<!-- 配置查询结果集与对象之间的映射 -->
+	<resultMap type="Employee" id="EmployeeMap">
+		<id property="id" column="id" />
+		<result property="employeeId" column="employee_id" />
+		<result property="name" column="name" />
+		<result property="departmentId" column="department_id" />
+		<result property="sex" column="sex" />
+		<result property="birthday" column="birthday" />
+		<result property="salary" column="salary" />
+		<result property="phone" column="phone" />
+	</resultMap>
+	
+	<!-- 配置查询结果集与对象之间的映射 -->
+	<!-- 包含地址信息的映射 -->
+	<resultMap type="Employee" id="FullEmployeeMap">
+		<id property="id" column="id" />
+		<result property="employeeId" column="employee_id" />
+		<result property="name" column="name" />
+		<result property="departmentId" column="department_id" />
+		<result property="sex" column="sex" />
+		<result property="birthday" column="birthday" />
+		<result property="salary" column="salary" />
+		<result property="phone" column="phone" />
+		<!-- 一对一关联 -->
+		<association property="department" select="com.situ.dao.DepartmentDAO.findById" column="department_id"/>
+	</resultMap>
+
+
+<!-- 根据部门编号查询 -->
+	<select id="findAllByDepartmentId" resultMap="FullEmployeeMap" parameterType="java.lang.Integer">
+	select
+	<include refid="EmployeeColumns"/>
+		from employee_database where department_id = #{id}
+	
+	</select>
+
+	<!-- 查询所有员工，因为要分页，所以要指定排序字段 -->
+	<!-- id要和dao接口中的方法名匹配 -->
+	<select id="findAll" resultMap="FullEmployeeMap" parameterType="EmployeeSearchBean">
+		select
+		<include refid="EmployeeColumns" />
+		from employee_database 
+		<where>
+			<if test="name!=null and name!=''">
+				
+				<bind name="likename" value="'%'+name+'%'" />
+				and name like #{likename}
+			</if>
+			<if test="employeeId!=null and employeeId != ''">
+				and employee_id = #{employeeId}
+			</if>
+			<if test="salary!=null and salary!=''">
+				and salary = #{salary}
+			</if>
+			<if test="departmentId!=null and departmentId!=''">
+				and department_id = #{departmentId}
+			</if>
+			<if test="start!=null and start!=''">
+				and birthday &gt; #{start}
+			</if>
+			<if test="end!=null and end!=''">
+				and birthday &lt; #{end}
+			</if>
+
+		</where>
+		order by id
+	</select>
+
+	<!-- 根据编号唯一查询 -->
+	<select id="findById" resultMap="EmployeeMap" parameterType="java.util.Map">
+		select
+		<include refid="EmployeeColumns" />
+		from employee_database where id = #{id}
+	</select>
+
+	<!-- 删除 -->
+	<delete id="deleteByIds">
+		delete from employee_database
+		<where>
+			id in
+			<foreach collection="ids" item="id" separator="," open="(" close=")">
+				#{id}
+			</foreach>
+		</where>
+	</delete>
+
+	<!-- 修改 -->
+	<update id="update" parameterType="Employee">
+		update employee_database
+		<set>
+			employee_id = #{employeeId},
+			name = #{name},
+			sex = #{sex},
+			phone = #{phone},
+			salary = #{salary},
+			department_id = #{departmentId},
+			birthday = #{birthday,jdbcType=DATE}
+		</set>
+		where id = #{id}
+	</update>
+
+
+	<!-- 添加 -->
+	<insert id="save" parameterType="Employee" useGeneratedKeys="true" keyProperty="id" keyColumn="id">
+		insert into employee_database
+		(employee_id,name,sex,phone,salary,department_id,birthday)
+		values(
+			#{employeeId},
+			#{name},
+			#{sex},
+			#{phone},
+			#{salary},
+			#{departmentId},
+			#{birthday,jdbcType=DATE}
+		)
+
+	</insert>
+
+
+
+
+</mapper>
